@@ -178,6 +178,12 @@
   .db-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;}
   .db-dot.live{background:#4ADE80;}
   .db-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .db-toggle{
+    font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--gold-2);
+    background:transparent;border:none;cursor:pointer;padding:6px 8px;white-space:nowrap;
+    text-decoration:underline;text-underline-offset:3px;
+  }
+  .db-toggle:hover{color:var(--ink);}
   .db-btn{
     font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
     border:1px solid var(--line);background:var(--paper);color:var(--text);
@@ -195,6 +201,7 @@
     background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px 18px;margin-bottom:14px;
   }
+  .sync-panel.collapsed{display:none;}
   .sync-panel label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-2);font-weight:600;display:block;margin-bottom:8px;}
   .sync-input-row{display:flex;gap:8px;flex-wrap:wrap;}
   .sync-input-row input[type="text"]{
@@ -284,6 +291,7 @@
   }
   @media (max-width:640px){
     .db-bar{flex-direction:column;align-items:stretch;}
+    .db-toggle{align-self:flex-start;}
     .db-actions{flex-direction:column;}
     .db-btn{width:100%;}
     .sync-input-row{flex-direction:column;}
@@ -443,9 +451,10 @@
       <span class="db-dot" id="dbDot"></span>
       <span id="dbStatus">Memakai data bawaan</span>
     </div>
+    <button type="button" class="db-toggle" id="dbToggle">⚙ Pengaturan Sumber Data</button>
   </div>
 
-  <div class="sync-panel">
+  <div class="sync-panel" id="syncPanel">
     <label for="sheetUrlInput">🔗 Tautan CSV Google Sheets (hasil <b>File → Share → Publish to web</b>, bukan tautan share biasa)</label>
     <div class="sync-input-row">
       <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv">
@@ -1102,6 +1111,7 @@ function initDatabaseImport(){
     document.getElementById("sheetSyncNowBtn").style.display = "none";
     document.getElementById("sheetCopyLinkBtn").style.display = "none";
     document.getElementById("sheetUrlInput").value = "";
+    document.getElementById("syncPanel").classList.remove("collapsed");
     history.replaceState(null, "", location.pathname);
     afterDataChange(null);
   });
@@ -1224,11 +1234,20 @@ function initSheetSync(){
   const connectBtn = document.getElementById("sheetConnectBtn");
   const syncNowBtn = document.getElementById("sheetSyncNowBtn");
   const copyBtn = document.getElementById("sheetCopyLinkBtn");
+  const panel = document.getElementById("syncPanel");
+  const toggleBtn = document.getElementById("dbToggle");
+
+  toggleBtn.addEventListener("click", () => {
+    panel.classList.toggle("collapsed");
+  });
 
   const fromQuery = new URLSearchParams(location.search).get("sheet");
   if(fromQuery){
     input.value = fromQuery;
-    fetchAndSyncSheet(fromQuery).then(ok => { if(ok) startAutoSync(); });
+    panel.classList.add("collapsed"); // optimis: sembunyikan dulu, tampilkan lagi kalau gagal
+    fetchAndSyncSheet(fromQuery).then(ok => {
+      if(ok){ startAutoSync(); } else { panel.classList.remove("collapsed"); }
+    });
   }
 
   connectBtn.addEventListener("click", async () => {
@@ -1242,6 +1261,7 @@ function initSheetSync(){
     if(ok){
       history.replaceState(null, "", buildBookmarkUrl());
       startAutoSync();
+      panel.classList.add("collapsed");
     }
   });
 
